@@ -1,7 +1,7 @@
-# MKY Tasks
+# Abatask by moneykey
 
 Our own Linear replacement. Node.js + MongoDB, plain HTML/CSS/JS frontend (no build step).
-Styled with the MKY design system (tokens copied to `public/ds/`).
+Built for moneykey and styled with the MKY design system (tokens copied to `public/ds/`).
 
 ## Run
 1. Get a MongoDB database (pick one):

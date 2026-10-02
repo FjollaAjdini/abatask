@@ -1,4 +1,4 @@
-/* MKY Tasks — app layer on top of the MKY design tokens (/ds). */
+/* Abatask — app layer on top of the MKY design tokens (/ds). */
 :root {
   --muted: #5B6275;          /* readable secondary text (the brand's text-secondary is too pale for UI) */
   --hover: var(--mky-primary-tint-hover);

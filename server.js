@@ -1,4 +1,4 @@
-// MKY Tasks — task tracker on Node.js + MongoDB. Node 20+.
+// Abatask — task tracker on Node.js + MongoDB. Node 20+.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -370,4 +370,4 @@ const pingTimer = setInterval(() => { for (const res of clients) res.write(': pi
 pingTimer.unref();
 
 await connect();
-server.listen(PORT, () => console.log(`MKY Tasks running → http://localhost:${PORT}  (MongoDB: ${MONGODB_DB})${TEAM_PASSWORD ? '  (team password on)' : ''}`));
+server.listen(PORT, () => console.log(`Abatask running → http://localhost:${PORT}  (MongoDB: ${MONGODB_DB})${TEAM_PASSWORD ? '  (team password on)' : ''}`));

@@ -1,6 +1,6 @@
-// MKY Tasks — vanilla JS single-page app. No build step.
+// Abatask — vanilla JS single-page app. No build step.
 // Product name — change here (and in index.html <title>) once decided.
-const APP_NAME = 'Tasks';
+const APP_NAME = 'Abatask';
 const APP_BYLINE = 'by moneykey';
 
 const STATUSES = ['backlog', 'todo', 'in_progress', 'in_review', 'done', 'canceled'];
