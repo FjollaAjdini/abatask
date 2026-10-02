@@ -1,4 +1,8 @@
 // MKY Tasks — vanilla JS single-page app. No build step.
+// Product name — change here (and in index.html <title>) once decided.
+const APP_NAME = 'Tasks';
+const APP_BYLINE = 'by moneykey';
+
 const STATUSES = ['backlog', 'todo', 'in_progress', 'in_review', 'done', 'canceled'];
 const STATUS_LABEL = { backlog: 'Backlog', todo: 'Todo', in_progress: 'In progress', in_review: 'In review', done: 'Done', canceled: 'Canceled' };
 const STATUS_COLOR = { backlog: '#9AA0B2', todo: '#5B6275', in_progress: '#F7B844', in_review: '#383BFF', done: '#283C8C', canceled: '#9AA0B2' };
@@ -121,9 +125,9 @@ function renderLogin() {
   $('#app').innerHTML = `
   <div class="login">
     <div class="login__art">
-      <img src="/ds/assets/logo/logo-lockup-reverse.svg" alt="MKY Treuhandpartner">
+      <div class="login__logo"><img src="/brand/moneykey-logo.png" alt="moneykey"></div>
       <h1 class="login__headline">Keep every task in <span class="mky-hl">one place</span>.</h1>
-      <span style="opacity:.7;font-size:14px">Our own tracker — no seat limits, no per-user fees.</span>
+      <span style="opacity:.7;font-size:14px">${esc(APP_NAME)} ${esc(APP_BYLINE)}</span>
     </div>
     <form class="login__form" id="loginForm">
       <h2>Sign in</h2>
@@ -165,7 +169,7 @@ function renderSidebar() {
   const open = (pid) => state.issues.filter((i) => i.project_id === pid && !['done', 'canceled'].includes(i.status)).length;
   const nav = (scope, icon, label, count) => `<button class="nav ${state.scope === scope ? 'on' : ''}" data-act="scope" data-scope="${scope}">${icon}${esc(label)}<span class="count">${count || ''}</span></button>`;
   $('#side').innerHTML = `
-    <div class="side__brand"><img src="/ds/assets/logo/logo-lockup-blue.svg" alt="MKY"></div>
+    <div class="side__brand"><img src="/brand/moneykey-logo.png" alt="moneykey"><div class="side__app"><b>${esc(APP_NAME)}</b> ${esc(APP_BYLINE)}</div></div>
     <button class="mky-btn mky-btn--primary mky-btn--sm" data-act="new-issue" style="margin:0 4px 8px">${I.plus} New issue <kbd style="margin-left:auto;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);color:#fff">C</kbd></button>
     ${nav('mine', I.mine, 'My issues', mine)}
     ${nav('all', I.all, 'All issues', state.issues.filter((i) => !['done', 'canceled'].includes(i.status)).length)}

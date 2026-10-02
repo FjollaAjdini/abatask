@@ -21,7 +21,8 @@ button { font: inherit; color: inherit; }
 }
 .login__art::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(70% 70% at 30% 30%, #000, transparent); }
 .login__art > * { position: relative; }
-.login__art img { height: 34px; width: auto; }
+.login__logo { background: #fff; border-radius: var(--mky-radius-lg); padding: 14px 22px; align-self: flex-start; box-shadow: var(--mky-shadow-2); }
+.login__logo img { width: 150px; height: auto; }
 .login__headline { font-size: 52px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; max-width: 460px; margin: 0; }
 .login__form { display: flex; flex-direction: column; justify-content: center; padding: 48px; max-width: 460px; width: 100%; margin: 0 auto; gap: 16px; }
 .login__form h2 { margin: 0 0 4px; font-size: 28px; }
@@ -31,7 +32,9 @@ button { font: inherit; color: inherit; }
 .shell { height: 100vh; display: grid; grid-template-columns: var(--side-w) 1fr; }
 .side { border-right: 1px solid var(--mky-border); background: var(--mky-surface-sunken); display: flex; flex-direction: column; padding: 16px 12px; gap: 4px; overflow-y: auto; }
 .side__brand { padding: 4px 8px 16px; }
-.side__brand img { height: 28px; width: auto; }
+.side__brand img { width: 118px; height: auto; }
+.side__app { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.side__app b { color: var(--mky-ink); font-size: 13px; }
 .side__label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 16px 10px 6px; display: flex; justify-content: space-between; align-items: center; }
 .nav { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--mky-radius-sm); cursor: pointer; font-size: 14px; font-weight: 500; background: none; border: 0; text-align: left; width: 100%; }
 .nav:hover { background: var(--hover); }
