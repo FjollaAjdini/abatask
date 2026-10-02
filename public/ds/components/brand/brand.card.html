@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Brand components — MKY components</title>
+<link rel="stylesheet" href="../../styles.css" />
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  body { padding: 48px; background: var(--mky-surface-sunken); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-bottom: 32px; }
+  h2 { font-family: var(--mky-font-display); margin: 40px 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; max-width: 900px; }
+</style>
+</head>
+<body>
+  <h1 class="mky-h3">Brand components</h1>
+  <p class="mky-body" style="color:var(--mky-text-secondary); max-width:640px;">Recovered from a prior MKY design system build — component <em>types</em> this system's first pass didn't have at all.</p>
+
+  <h2 class="mky-h6">Eyebrow</h2>
+  <div class="row">
+    <span class="mky-eyebrow">Dienstleistungen</span>
+    <span class="mky-eyebrow mky-eyebrow--gold">MoneyKey</span>
+  </div>
+
+  <h2 class="mky-h6">Highlight</h2>
+  <div class="row" style="align-items:center;">
+    <div class="mky-h3">Die <span class="mky-hl">teuerste</span> Entscheidung</div>
+    <div class="mky-h3">Der <span class="mky-ul">Mythos<svg viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M2 5 C 25 1, 60 7, 98 3" stroke="#F7B844" stroke-width="3" stroke-linecap="round" fill="none"/></svg></span></div>
+  </div>
+
+  <h2 class="mky-h6">SectionHeader</h2>
+  <div class="mky-section__head">
+    <span class="mky-eyebrow">Leistungsübersicht</span>
+    <h2 class="mky-section__title">Warum MKY?</h2>
+    <p class="mky-section__lede">Digitale Tools kombiniert mit persönlicher Beratung.</p>
+  </div>
+
+  <h2 class="mky-h6">ServiceCard</h2>
+  <div class="grid">
+    <article class="mky-service">
+      <div class="mky-service__icon"><i data-lucide="calculator"></i></div>
+      <h3 class="mky-service__title">Buchführung</h3>
+      <p class="mky-service__desc">Effizient, transparent und jederzeit online abrufbar.</p>
+      <a class="mky-service__link" href="#">Mehr erfahren <span aria-hidden="true">→</span></a>
+    </article>
+    <article class="mky-service">
+      <div class="mky-service__icon"><i data-lucide="landmark"></i></div>
+      <h3 class="mky-service__title">Steuern</h3>
+      <p class="mky-service__desc">Effizient, transparent und rechtssicher.</p>
+      <a class="mky-service__link" href="#">Mehr erfahren <span aria-hidden="true">→</span></a>
+    </article>
+  </div>
+
+  <h2 class="mky-h6">FAQItem</h2>
+  <div style="max-width:560px;">
+    <div class="mky-faq__item">
+      <button type="button" class="mky-faq__q" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
+        <span>Wie lange dauert die Umstellung?</span>
+        <span class="mky-faq__icon" aria-hidden="true">+</span>
+      </button>
+      <div class="mky-faq__a" style="display:none;">In der Regel 2–3 Wochen, ohne Unterbruch deiner laufenden Buchhaltung.</div>
+    </div>
+    <div class="mky-faq__item">
+      <button type="button" class="mky-faq__q" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
+        <span>Brauche ich einen Vertrag?</span>
+        <span class="mky-faq__icon" aria-hidden="true">+</span>
+      </button>
+      <div class="mky-faq__a" style="display:none;">Ja, ein Mandatsvertrag — kündbar mit 30 Tagen Frist.</div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

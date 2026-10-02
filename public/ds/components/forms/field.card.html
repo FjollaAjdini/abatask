@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Form fields — MKY components</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { padding: 48px; background: var(--mky-surface-sunken); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 720px; }
+  h2 { font-family: var(--mky-font-display); margin: 40px 0 12px; }
+</style>
+</head>
+<body>
+  <h1 class="mky-h3" style="margin-bottom:24px;">Form fields</h1>
+
+  <div class="grid">
+    <div class="mky-field">
+      <label class="mky-label" for="name">Name</label>
+      <input class="mky-input" id="name" type="text" placeholder="Vor- und Nachname" />
+    </div>
+    <div class="mky-field">
+      <label class="mky-label" for="email">E-Mail</label>
+      <input class="mky-input" id="email" type="email" placeholder="name@firma.ch" />
+    </div>
+    <div class="mky-field">
+      <label class="mky-label" for="service">Beratung auswählen</label>
+      <select class="mky-select" id="service">
+        <option>Buchführung</option>
+        <option>Lohnbuchhaltung</option>
+        <option>Steuern</option>
+        <option>Controlling &amp; Berichterstattung</option>
+      </select>
+    </div>
+    <div class="mky-field mky-field--error">
+      <label class="mky-label" for="phone">Telefon</label>
+      <input class="mky-input" id="phone" type="tel" />
+      <span class="mky-hint">Bitte gib eine gültige Telefonnummer ein.</span>
+    </div>
+  </div>
+
+  <div class="mky-field" style="max-width:720px; margin-top:24px;">
+    <label class="mky-label" for="msg">Nachricht</label>
+    <textarea class="mky-textarea" id="msg" placeholder="Wie können wir helfen?"></textarea>
+  </div>
+
+  <label class="mky-checkbox" style="margin-top:16px;">
+    <input type="checkbox" checked />
+    Für den Newsletter anmelden
+  </label>
+</body>
+</html>

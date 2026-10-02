@@ -1,0 +1,102 @@
+/*
+  MKY Treuhandpartner — Color tokens
+  Source: `Brand Guidelines – MKY Group.pdf` (2025), pages 3.2–3.3 — SOURCED, verbatim hex values.
+  Cross-checked against the real logo files (`assets/logo/*`) and the live mky.group site.
+
+  -4% / -8% "hover" and "selected" states are documented in the brandbook as relative
+  shifts off the main hue (e.g. "#283C8C - 4%"), not fixed hex, and the notation is genuinely
+  ambiguous — two different, defensible readings exist:
+    (a) a darken of the solid hue itself (color-mix toward black) — this system's first pass,
+        kept below as --mky-*-hover-on-main / --mky-*-selected for solid-fill contexts, and
+    (b) a low-opacity TINT of the hue laid over a neutral surface — a Material-style "state
+        layer" (4% hover / 8% selected), which is how a prior MKY design system build read the
+        same brandbook page and is the more standard convention for hover/selected on
+        ghost/outline/text buttons and list rows. Added below as --mky-*-tint-hover /
+        --mky-*-tint-selected. Use (a) for solid buttons, (b) for anything transparent.
+  The three standalone "Hover" swatches (Primary #0E0F16, Secondary #141E46, Accent #7C5C22)
+  ARE fixed hex in the brandbook, unambiguous — kept as-is.
+
+  "Stroke / Secondary" is listed in the brandbook as #FFA4D0 (pink) — the only appearance of
+  pink anywhere in this brand; no other page, asset, or the live site shows it. Two readings
+  again: this system's first pass guessed it was an unedited Figma-template leftover, but a
+  prior MKY design system build (built from the same PDF) took it at face value and shipped it
+  as `--stroke-2`, "a rare accent stroke." Neither reading is provable from the source alone.
+  Kept here for fidelity; still not wired into any component as a default — treat as an open
+  question, not a resolved fact either way.
+*/
+
+:root {
+  /* ---- Brand hues (sourced) ---- */
+  --mky-primary: #283C8C;      /* Swiss trust blue — logo, primary UI actions */
+  --mky-secondary: #383BFF;    /* vivid indigo — secondary accent */
+  --mky-accent: #F7B844;       /* warm gold — the "Treuhandbüro" hero highlight on mky.group */
+  --mky-ink: #020617;          /* "Dark Blue" — the brand's real near-black */
+  --mky-white: #FFFFFF;
+
+  /* ---- Primary state ramp ---- */
+  --mky-primary-main: var(--mky-primary);
+  --mky-primary-contrast: #FFFFFF;
+  --mky-primary-hover-on-main: color-mix(in srgb, var(--mky-primary) 96%, black); /* "-4%" */
+  --mky-primary-selected: color-mix(in srgb, var(--mky-primary) 92%, black);      /* "-8%" */
+  --mky-primary-hover: #0E0F16; /* sourced fixed hex */
+
+  /* ---- Secondary state ramp ---- */
+  --mky-secondary-main: var(--mky-secondary);
+  --mky-secondary-contrast: #FFFFFF;
+  --mky-secondary-hover-on-main: color-mix(in srgb, var(--mky-secondary) 96%, black);
+  --mky-secondary-selected: color-mix(in srgb, var(--mky-secondary) 92%, black);
+  --mky-secondary-hover: #141E46; /* sourced fixed hex */
+
+  /* ---- Accent state ramp ---- */
+  --mky-accent-main: var(--mky-accent);
+  --mky-accent-contrast: #FFFFFF;
+  --mky-accent-hover-on-main: color-mix(in srgb, var(--mky-accent) 96%, black);
+  --mky-accent-selected: color-mix(in srgb, var(--mky-accent) 92%, black);
+  --mky-accent-hover: #7C5C22; /* sourced fixed hex */
+
+  /* ---- Alpha-tint state layers (reading (b) above) — for ghost/outline buttons, list-row
+     hover, card "selected" fills on a neutral surface. ---- */
+  --mky-primary-tint-hover: rgba(40, 60, 140, 0.04);
+  --mky-primary-tint-selected: rgba(40, 60, 140, 0.08);
+  --mky-secondary-tint-hover: rgba(56, 59, 255, 0.04);
+  --mky-secondary-tint-selected: rgba(56, 59, 255, 0.08);
+  --mky-accent-tint-hover: rgba(247, 184, 68, 0.04);
+  --mky-accent-tint-selected: rgba(247, 184, 68, 0.08);
+
+  /* ---- Text ---- */
+  --mky-text-primary: #020617;
+  --mky-text-secondary: #BFC0C5;
+  --mky-text-disabled: #B3B3B3;
+  --mky-text-alt: #283C8C;        /* brand-blue text, e.g. links/eyebrows on white */
+  --mky-text-alt-light: #BED2FF;  /* brand-blue text on dark surfaces */
+  --mky-text-contrast: #FFFFFF;
+
+  /* ---- Stroke ---- */
+  --mky-stroke-primary: #CCCCCC;
+  --mky-stroke-secondary: #FFA4D0; /* sourced, flagged — see file header */
+  --mky-stroke-accent: #FDEDD0;
+  --mky-stroke-primary-subtle: #6062FF;
+  --mky-stroke-secondary-subtle: #767E9E;
+  --mky-stroke-accent-subtle: #FEF6E7;
+
+  /* Practical default border — not literally named in the brandbook's Stroke group,
+     but --mky-stroke-primary (#CCCCCC) is too heavy for hairline card borders at the
+     brandbook's own "Background / Paper" white; this is the de-facto crisp divider used
+     throughout guidelines/components here. */
+  --mky-border: #E4E6EC;
+
+  /* ---- Background ---- */
+  --mky-bg-paper: #FFFFFF;
+  --mky-bg-light-blue: #EBF2FF;
+  --mky-bg-paper-2: #FDEDD0;
+  --mky-bg-paper-3: #6E86FF;
+
+  /* ---- Surface aliases used across this system ---- */
+  --mky-surface: var(--mky-bg-paper);
+  --mky-surface-sunken: #F6F8FC; /* inferred neutral canvas, not in brandbook — flagged */
+  --mky-surface-inverse: var(--mky-ink);
+}
+
+/* Dark theme is NOT documented in the brandbook or present on mky.group (light-only,
+   professional-services site). Not shipped here — see readme.md → Visual foundations →
+   Theme. If one is ever requested, invert onto --mky-ink. */

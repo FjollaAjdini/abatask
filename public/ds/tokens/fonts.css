@@ -1,0 +1,75 @@
+/*
+  MKY Treuhandpartner — Font loading
+  Source: `Brand Guidelines – MKY Group.pdf`, page 2.1–2.2 — "Manrope, Google Typeface",
+  7 weights Extra Light→Bold, samples shown at Regular/Semibold/Bold.
+
+  CORRECTED: an earlier pass of this system loaded Manrope from Google Fonts' CDN because no
+  font files seemed to have come with the brandbook. They did — found in a prior MKY design
+  system build (`MKY Treuhandpartner Design System.zip`, `fonts/Manrope-*.ttf`, all 8 weights
+  incl. the variable font) and copied into `assets/fonts/` here. Self-hosted now, matching the
+  prior system's own approach — no external request needed to render brand type correctly.
+*/
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-ExtraLight.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-Light.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-ExtraBold.ttf') format('truetype');
+}
+
+:root {
+  --mky-font-body: 'Manrope', 'Helvetica Neue', Arial, sans-serif;
+  --mky-font-display: 'Manrope', 'Helvetica Neue', Arial, sans-serif; /* one typeface, no second display face */
+  --mky-font-mono: ui-monospace, 'SF Mono', Menlo, monospace; /* fallback only — no mono voice in this brand */
+
+  --mky-weight-extralight: 200;
+  --mky-weight-light: 300;
+  --mky-weight-regular: 400;
+  --mky-weight-medium: 500;
+  --mky-weight-semibold: 600;
+  --mky-weight-bold: 700;
+  --mky-weight-extrabold: 800;
+}

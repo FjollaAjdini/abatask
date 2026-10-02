@@ -1,0 +1,41 @@
+/*
+  MKY Treuhandpartner — global entry point.
+  Consumers link this ONE file. It only @imports the token/utility layers, plus a thin
+  base reset.
+*/
+
+@import url('tokens/fonts.css');
+@import url('tokens/colors.css');
+@import url('tokens/typography.css');
+@import url('tokens/spacing.css');
+@import url('fx/mky-fx.css');
+@import url('components/components.css');
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--mky-font-body);
+  font-size: var(--mky-text-body);
+  line-height: var(--mky-lh-body);
+  color: var(--mky-text-primary);
+  background: var(--mky-bg-paper);
+}
+
+img, svg { display: block; max-width: 100%; }
+
+a { color: inherit; }
+
+.mky-container {
+  max-width: var(--mky-container);
+  margin: 0 auto;
+  padding: 0 var(--mky-gutter);
+}
+
+.mky-visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}

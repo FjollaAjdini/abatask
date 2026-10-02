@@ -1,0 +1,169 @@
+/*
+  MKY Treuhandpartner — Core component styles.
+  Plain CSS classes (not a JSX library — see readme.md → How to use for why this system
+  ships reference HTML/CSS instead of a React component library: no product codebase or
+  design-tool compiler was handed off for MKY, only a brandbook + the live marketing site).
+  Import alongside styles.css. Class names are prefixed --mky- / .mky- throughout.
+*/
+
+/* ============ Button ============ */
+.mky-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mky-space-2);
+  font-family: var(--mky-font-body);
+  font-weight: var(--mky-weight-semibold);
+  font-size: var(--mky-text-body);
+  line-height: 1;
+  padding: 14px 24px;
+  border-radius: var(--mky-radius-md);
+  border: var(--mky-border-width) solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--mky-duration) var(--mky-ease),
+              border-color var(--mky-duration) var(--mky-ease),
+              color var(--mky-duration) var(--mky-ease),
+              transform var(--mky-duration) var(--mky-ease);
+}
+.mky-btn:active { transform: translateY(1px); }
+.mky-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--mky-primary) 25%, transparent); }
+
+.mky-btn--primary { background: var(--mky-primary-main); color: var(--mky-primary-contrast); }
+.mky-btn--primary:hover { background: var(--mky-primary-hover-on-main); }
+
+.mky-btn--secondary { background: var(--mky-secondary-main); color: var(--mky-secondary-contrast); }
+.mky-btn--secondary:hover { background: var(--mky-secondary-hover-on-main); }
+
+.mky-btn--accent { background: var(--mky-accent-main); color: var(--mky-accent-contrast); }
+.mky-btn--accent:hover { background: var(--mky-accent-hover-on-main); }
+
+.mky-btn--outline { background: transparent; color: var(--mky-text-primary); border-color: var(--mky-stroke-primary); }
+.mky-btn--outline:hover { border-color: var(--mky-ink); }
+
+.mky-btn--ghost { background: transparent; color: var(--mky-primary-main); }
+.mky-btn--ghost:hover { background: var(--mky-primary-tint-hover); }
+
+.mky-btn--sm { padding: 9px 16px; font-size: var(--mky-text-body-sm); border-radius: var(--mky-radius-sm); }
+.mky-btn--lg { padding: 17px 32px; font-size: var(--mky-text-body-lg); }
+.mky-btn--pill { border-radius: var(--mky-radius-pill); }
+
+.mky-btn:disabled { background: var(--mky-text-disabled); color: #fff; cursor: not-allowed; }
+
+/* ============ Badge / Chip ============ */
+.mky-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--mky-text-caption);
+  font-weight: var(--mky-weight-semibold);
+  letter-spacing: 0.02em;
+  padding: 4px 10px;
+  border-radius: var(--mky-radius-pill);
+  background: var(--mky-bg-light-blue);
+  color: var(--mky-text-alt);
+}
+.mky-badge--accent { background: var(--mky-stroke-accent); color: #7C5C22; }
+.mky-badge--ink { background: var(--mky-ink); color: #fff; }
+.mky-badge--outline { background: transparent; border: 1px solid var(--mky-stroke-primary); color: var(--mky-text-primary); }
+
+.mky-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--mky-radius-pill);
+  border: 1px solid var(--mky-border);
+  background: var(--mky-white);
+  font-size: var(--mky-text-body-sm);
+  font-weight: var(--mky-weight-medium);
+  cursor: pointer;
+  transition: border-color var(--mky-duration) var(--mky-ease), background var(--mky-duration) var(--mky-ease);
+}
+.mky-chip:hover { border-color: var(--mky-primary-main); }
+.mky-chip[aria-pressed="true"] { background: var(--mky-bg-light-blue); border-color: var(--mky-primary-main); color: var(--mky-text-alt); }
+
+/* ============ Card ============ */
+.mky-card {
+  background: var(--mky-white);
+  border: var(--mky-border-width) solid var(--mky-border);
+  border-radius: var(--mky-radius-lg);
+  padding: var(--mky-space-6);
+  box-shadow: var(--mky-shadow-1);
+}
+.mky-card--feature { border-radius: var(--mky-radius-xl); padding: var(--mky-space-7); }
+.mky-card--flat { box-shadow: none; }
+.mky-card--dark { background: var(--mky-ink); border-color: var(--mky-ink); color: #fff; }
+.mky-card--dark .mky-h4, .mky-card--dark .mky-body { color: #fff; }
+
+/* ============ Brand components — recovered from a prior MKY design system build ============
+   Highlight, SectionHeader, ServiceCard-with-link, Eyebrow tones, FAQItem: real component
+   *types* this system's first pass didn't have (it only had a generic Card + a CSS-only
+   eyebrow utility). See components/brand/*.card.html for live specimens. */
+
+/* ---- Eyebrow (tone variants) ---- */
+.mky-eyebrow--gold { color: var(--mky-accent-main); }
+.mky-eyebrow--cream { color: #7C5C22; }
+
+/* ---- Highlight — the gold-block / scribble headline device (Signature Motif #2 / #3) ---- */
+.mky-hl {
+  background: var(--mky-accent-main);
+  color: var(--mky-text-primary);
+  padding: 1px 8px;
+}
+.mky-ul {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+.mky-ul svg { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 6px; overflow: visible; }
+
+/* ---- SectionHeader ---- */
+.mky-section__head { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
+.mky-section__title { font-family: var(--mky-font-display); font-weight: var(--mky-weight-bold); font-size: var(--mky-text-h2); line-height: var(--mky-lh-heading); letter-spacing: var(--mky-ls-heading); margin: 0; }
+.mky-section__lede { font-size: var(--mky-text-body-lg); line-height: var(--mky-lh-body); color: var(--mky-text-secondary); margin: 0; }
+
+/* ---- ServiceCard (icon + title + tagline + body + link) ---- */
+.mky-service { display: flex; flex-direction: column; gap: 10px; padding: var(--mky-space-6); background: var(--mky-white); border: 1px solid var(--mky-border); border-radius: var(--mky-radius-lg); }
+.mky-service__icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: var(--mky-radius-sm); background: var(--mky-bg-light-blue); color: var(--mky-primary-main); }
+.mky-service__icon i, .mky-service__icon svg { width: 20px; height: 20px; }
+.mky-service__title { font-family: var(--mky-font-display); font-weight: var(--mky-weight-bold); font-size: var(--mky-text-h4); margin: 0; }
+.mky-service__desc { font-size: var(--mky-text-body-sm); color: var(--mky-text-secondary); margin: 0; flex: 1; }
+.mky-service__link { font-size: var(--mky-text-body-sm); font-weight: var(--mky-weight-semibold); color: var(--mky-primary-main); text-decoration: none; }
+.mky-service__link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- FAQItem (accordion) ---- */
+.mky-faq__item { border-bottom: 1px solid var(--mky-border); padding: 18px 0; }
+.mky-faq__q { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: none; border: none; padding: 0; font: inherit; font-weight: var(--mky-weight-semibold); font-size: var(--mky-text-body-lg); color: var(--mky-text-primary); text-align: left; cursor: pointer; }
+.mky-faq__q .mky-faq__icon { flex: none; color: var(--mky-primary-main); font-size: 22px; line-height: 1; }
+.mky-faq__a { margin-top: 12px; font-size: var(--mky-text-body); color: var(--mky-text-secondary); line-height: var(--mky-lh-body); }
+
+/* ============ Form fields ============ */
+.mky-field { display: flex; flex-direction: column; gap: var(--mky-space-2); }
+.mky-label { font-size: var(--mky-text-body-sm); font-weight: var(--mky-weight-semibold); color: var(--mky-text-primary); }
+.mky-hint { font-size: var(--mky-text-caption); color: var(--mky-text-secondary); }
+
+.mky-input, .mky-select, .mky-textarea {
+  font-family: var(--mky-font-body);
+  font-size: var(--mky-text-body);
+  color: var(--mky-text-primary);
+  background: var(--mky-white);
+  border: var(--mky-border-width) solid var(--mky-stroke-primary);
+  border-radius: var(--mky-radius-sm);
+  padding: 12px 14px;
+  transition: border-color var(--mky-duration) var(--mky-ease), box-shadow var(--mky-duration) var(--mky-ease);
+}
+.mky-textarea { resize: vertical; min-height: 96px; }
+.mky-input:focus, .mky-select:focus, .mky-textarea:focus {
+  outline: none;
+  border-color: var(--mky-primary-main);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mky-primary) 15%, transparent);
+}
+.mky-input::placeholder, .mky-textarea::placeholder { color: var(--mky-text-secondary); }
+.mky-input:disabled, .mky-select:disabled, .mky-textarea:disabled { background: var(--mky-surface-sunken); color: var(--mky-text-disabled); cursor: not-allowed; }
+.mky-field--error .mky-input, .mky-field--error .mky-select, .mky-field--error .mky-textarea { border-color: #C13C3C; }
+.mky-field--error .mky-hint { color: #C13C3C; }
+
+.mky-checkbox { display: inline-flex; align-items: center; gap: var(--mky-space-2); font-size: var(--mky-text-body-sm); cursor: pointer; }
+.mky-checkbox input { width: 18px; height: 18px; accent-color: var(--mky-primary-main); cursor: pointer; }

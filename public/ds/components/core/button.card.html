@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Button — MKY components</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { padding: 48px; background: var(--mky-surface-sunken); }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 32px; }
+  h2 { font-family: var(--mky-font-display); margin: 0 0 12px; }
+</style>
+</head>
+<body>
+  <h1 class="mky-h3" style="margin-bottom:40px;">Button</h1>
+
+  <h2 class="mky-h6">Variants</h2>
+  <div class="row">
+    <button class="mky-btn mky-btn--primary">Kostenloses Erstgespräch</button>
+    <button class="mky-btn mky-btn--secondary">Secondary</button>
+    <button class="mky-btn mky-btn--accent">Accent</button>
+    <button class="mky-btn mky-btn--outline">Mehr erfahren</button>
+    <button class="mky-btn mky-btn--ghost">Ghost</button>
+    <button class="mky-btn mky-btn--primary" disabled>Disabled</button>
+  </div>
+
+  <h2 class="mky-h6">Sizes</h2>
+  <div class="row">
+    <button class="mky-btn mky-btn--primary mky-btn--sm">Small</button>
+    <button class="mky-btn mky-btn--primary">Default</button>
+    <button class="mky-btn mky-btn--primary mky-btn--lg">Large</button>
+  </div>
+
+  <h2 class="mky-h6">Pill (as used in the mky.group nav CTA)</h2>
+  <div class="row">
+    <button class="mky-btn mky-btn--primary mky-btn--pill">Kontaktiere uns</button>
+    <button class="mky-btn mky-btn--outline mky-btn--pill">Mehr erfahren</button>
+  </div>
+</body>
+</html>

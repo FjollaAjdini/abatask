@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Badge &amp; Chip — MKY components</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { padding: 48px; background: var(--mky-surface-sunken); }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 32px; }
+  h2 { font-family: var(--mky-font-display); margin: 0 0 12px; }
+</style>
+</head>
+<body>
+  <h1 class="mky-h3" style="margin-bottom:40px;">Badge &amp; Chip</h1>
+
+  <h2 class="mky-h6">Badge</h2>
+  <div class="row">
+    <span class="mky-badge">Buchführung</span>
+    <span class="mky-badge mky-badge--accent">Neu</span>
+    <span class="mky-badge mky-badge--ink">KMU</span>
+    <span class="mky-badge mky-badge--outline">Steuern</span>
+  </div>
+
+  <h2 class="mky-h6">Chip (toggle)</h2>
+  <div class="row">
+    <button class="mky-chip" aria-pressed="true">Buchführung</button>
+    <button class="mky-chip" aria-pressed="false">Lohnbuchhaltung</button>
+    <button class="mky-chip" aria-pressed="false">Steuern</button>
+    <button class="mky-chip" aria-pressed="false">Controlling</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+/*
+  MKY Treuhandpartner — Typography tokens
+  Source: brandbook 2.3 (the universal rule) and 5.2–5.3 (the only concrete scale given,
+  labeled "SM - Typography" — sized for social-post tiles, not web UI).
+
+  THE RULE (sourced, applies everywhere, any size):
+    Headings — 120% line-height, -2% letter-spacing.
+    Body     — 150% line-height,  0% letter-spacing.
+
+  THE SOCIAL SCALE (sourced, verbatim — page 5.2/5.3):
+    H1 80px/120%   H2 70px/120%   H3 64px/120%
+    P1 56px/120%*  P2 40px/150%   P3 36px/150%
+    *P1 is captioned "120%" in the file next to a paragraph sample, inconsistent with the
+    150%-for-body rule stated on 2.3 and shown for P2/P3 — kept as printed, flagged.
+
+  THE WEB SCALE below (H1–H6, Body, Caption) is NOT in the brandbook. mky.group's real
+  headline sizes are far smaller than the 80/70/64px social scale (a website hero reads
+  nowhere near 80px in the screenshot mined for this system). This scale is extrapolated
+  for product/marketing UI, keeping the same 120%/-2% heading and 150%/0% body rule so it
+  stays governed by the one documented principle — treat as a starting point to validate
+  against real designs, not a mined fact.
+*/
+
+:root {
+  /* ---- Social / display scale — SOURCED verbatim ---- */
+  --mky-social-h1-size: 80px;
+  --mky-social-h2-size: 70px;
+  --mky-social-h3-size: 64px;
+  --mky-social-p1-size: 56px;
+  --mky-social-p2-size: 40px;
+  --mky-social-p3-size: 36px;
+
+  /* ---- Web scale — EXTRAPOLATED, follows the sourced rule ---- */
+  --mky-text-h1: 56px;
+  --mky-text-h2: 40px;
+  --mky-text-h3: 32px;
+  --mky-text-h4: 24px;
+  --mky-text-h5: 20px;
+  --mky-text-h6: 17px;
+  --mky-text-body-lg: 18px;
+  --mky-text-body: 16px;
+  --mky-text-body-sm: 14px;
+  --mky-text-caption: 12px;
+
+  /* ---- The rule itself, as reusable tokens ---- */
+  --mky-lh-heading: 1.2;
+  --mky-ls-heading: -0.02em;
+  --mky-lh-body: 1.5;
+  --mky-ls-body: 0em;
+}
+
+/* ---- Utility classes ---- */
+
+.mky-h1, .mky-h2, .mky-h3, .mky-h4, .mky-h5, .mky-h6 {
+  font-family: var(--mky-font-display);
+  font-weight: var(--mky-weight-bold);
+  line-height: var(--mky-lh-heading);
+  letter-spacing: var(--mky-ls-heading);
+  color: var(--mky-text-primary);
+  margin: 0;
+}
+.mky-h1 { font-size: var(--mky-text-h1); }
+.mky-h2 { font-size: var(--mky-text-h2); }
+.mky-h3 { font-size: var(--mky-text-h3); }
+.mky-h4 { font-size: var(--mky-text-h4); font-weight: var(--mky-weight-semibold); }
+.mky-h5 { font-size: var(--mky-text-h5); font-weight: var(--mky-weight-semibold); }
+.mky-h6 { font-size: var(--mky-text-h6); font-weight: var(--mky-weight-semibold); }
+
+.mky-body-lg, .mky-body, .mky-body-sm, .mky-caption {
+  font-family: var(--mky-font-body);
+  font-weight: var(--mky-weight-regular);
+  line-height: var(--mky-lh-body);
+  letter-spacing: var(--mky-ls-body);
+  color: var(--mky-text-primary);
+  margin: 0;
+}
+.mky-body-lg { font-size: var(--mky-text-body-lg); }
+.mky-body { font-size: var(--mky-text-body); }
+.mky-body-sm { font-size: var(--mky-text-body-sm); }
+.mky-caption { font-size: var(--mky-text-caption); color: var(--mky-text-secondary); }
+
+.mky-eyebrow {
+  font-family: var(--mky-font-body);
+  font-weight: var(--mky-weight-semibold);
+  font-size: var(--mky-text-caption);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mky-text-alt);
+}
+
+/* Social display sizes, for social-tile production — matches the sourced scale exactly */
+.mky-social-h1 { font-size: var(--mky-social-h1-size); line-height: var(--mky-lh-heading); letter-spacing: var(--mky-ls-heading); font-weight: var(--mky-weight-bold); }
+.mky-social-h2 { font-size: var(--mky-social-h2-size); line-height: var(--mky-lh-heading); letter-spacing: var(--mky-ls-heading); font-weight: var(--mky-weight-bold); }
+.mky-social-h3 { font-size: var(--mky-social-h3-size); line-height: var(--mky-lh-heading); letter-spacing: var(--mky-ls-heading); font-weight: var(--mky-weight-bold); }
+.mky-social-p1 { font-size: var(--mky-social-p1-size); line-height: var(--mky-lh-heading); letter-spacing: var(--mky-ls-body); font-weight: var(--mky-weight-regular); }
+.mky-social-p2 { font-size: var(--mky-social-p2-size); line-height: var(--mky-lh-body); letter-spacing: var(--mky-ls-body); font-weight: var(--mky-weight-regular); }
+.mky-social-p3 { font-size: var(--mky-social-p3-size); line-height: var(--mky-lh-body); letter-spacing: var(--mky-ls-body); font-weight: var(--mky-weight-regular); }

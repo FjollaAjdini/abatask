@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Card — MKY components</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { padding: 48px; background: var(--mky-surface-sunken); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-bottom: 40px; }
+  h2 { font-family: var(--mky-font-display); margin: 0 0 12px; }
+</style>
+</head>
+<body>
+  <h1 class="mky-h3" style="margin-bottom:40px;">Card</h1>
+
+  <h2 class="mky-h6">Service card (from the mky.group "Leistungsübersicht" grid)</h2>
+  <div class="grid">
+    <div class="mky-card mky-hoverable mky-lift">
+      <span class="mky-eyebrow">Dienstleistung</span>
+      <h3 class="mky-h4" style="margin-top:8px;">Buchführung</h3>
+      <p class="mky-body" style="color:var(--mky-text-secondary); margin-top:8px;">Effizient, transparent und jederzeit online abrufbar.</p>
+    </div>
+    <div class="mky-card mky-hoverable mky-lift">
+      <span class="mky-eyebrow">Dienstleistung</span>
+      <h3 class="mky-h4" style="margin-top:8px;">Lohnbuchhaltung</h3>
+      <p class="mky-body" style="color:var(--mky-text-secondary); margin-top:8px;">Pünktlich, korrekt und gesetzeskonform.</p>
+    </div>
+    <div class="mky-card mky-card--dark mky-hoverable mky-lift">
+      <span class="mky-eyebrow" style="color:var(--mky-text-alt-light);">Dienstleistung</span>
+      <h3 class="mky-h4" style="margin-top:8px;">Steuern</h3>
+      <p class="mky-body" style="color:var(--mky-text-alt-light); margin-top:8px;">Effizient, transparent und rechtssicher.</p>
+    </div>
+  </div>
+
+  <h2 class="mky-h6">Feature card</h2>
+  <div class="mky-card mky-card--feature" style="max-width:480px;">
+    <h3 class="mky-h3">Kennzahlen-Dashboards</h3>
+    <p class="mky-body" style="color:var(--mky-text-secondary); margin-top:12px;">Verständliche Finanzberichte, jederzeit abrufbar — digitale Tools kombiniert mit persönlicher Beratung.</p>
+  </div>
+</body>
+</html>

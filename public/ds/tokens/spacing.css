@@ -1,0 +1,44 @@
+/*
+  MKY Treuhandpartner — Spacing, radii, border & shadow tokens
+  NONE of this file is in the brandbook — it covers Logo/Typography/Color/Photography/Social
+  only, with no spacing scale, radius scale, or shadow spec. Everything here is EXTRAPOLATED:
+  a conventional 4px-base scale, and radii/shadow/border values read off the real mky.group
+  homepage screenshot mined for this system (pill-shaped nav capsule, softly rounded CTA
+  buttons, generous whitespace). Treat as a starting point to validate against real product
+  Figma files, not a sourced fact — same caveat the brandbook's own Photography/Social
+  sections deserve.
+*/
+
+:root {
+  /* ---- Spacing scale (4px base) ---- */
+  --mky-space-1: 4px;
+  --mky-space-2: 8px;
+  --mky-space-3: 12px;
+  --mky-space-4: 16px;
+  --mky-space-5: 24px;
+  --mky-space-6: 32px;
+  --mky-space-7: 48px;
+  --mky-space-8: 64px;
+  --mky-space-9: 96px; /* section rhythm */
+
+  /* ---- Layout ---- */
+  --mky-container: 1200px;
+  --mky-gutter: 32px;
+
+  /* ---- Radii — read off the real site's pill nav / soft CTA buttons ---- */
+  --mky-radius-sm: 8px;   /* inputs, small chips */
+  --mky-radius-md: 12px;  /* buttons */
+  --mky-radius-lg: 20px;  /* cards */
+  --mky-radius-xl: 28px;  /* feature/hero cards */
+  --mky-radius-pill: 999px; /* nav capsule, tags */
+
+  /* ---- Borders ---- */
+  --mky-border-width: 1px;
+  --mky-border-color: var(--mky-border);
+
+  /* ---- Shadows — inferred, tight and low-contrast to match the brand's calm register ---- */
+  --mky-shadow-1: 0 1px 2px rgba(2, 6, 23, 0.06), 0 1px 1px rgba(2, 6, 23, 0.04);
+  --mky-shadow-2: 0 4px 12px rgba(2, 6, 23, 0.08);
+  --mky-shadow-pop: 0 24px 48px -12px rgba(40, 60, 140, 0.28); /* primary-tinted, hero/feature use */
+  --mky-shadow-nav: 0 8px 32px rgba(2, 6, 23, 0.12); /* the floating pill nav on mky.group */
+}
