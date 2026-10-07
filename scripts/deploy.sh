@@ -54,4 +54,4 @@ ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" "$TARGET" "mkdir -p '$SSH_REMOTE_PATH'"
 echo "Copying files..."
 scp "${SSH_OPTS[@]}" -P "$SSH_PORT" -r "$STAGE"/. "$TARGET:$SSH_REMOTE_PATH/"
 
-echo "Done. On the server run: cd $SSH_REMOTE_PATH && npm install --omit=dev && npm start"
+echo "Done. On the server run: cd $SSH_REMOTE_PATH && npm install --omit=dev && pm2 startOrReload ecosystem.config.cjs && pm2 save"
