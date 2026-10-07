@@ -4,11 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { MongoClient } from 'mongodb';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
-const TEAM_PASSWORD = process.env.TEAM_PASSWORD || ''; // optional shared password for sign-in
+const COOKIE_SECURE = process.env.COOKIE_SECURE === '1'; // set when served over https
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
 const MONGODB_DB = process.env.MONGODB_DB || 'mky_tasks';
 
@@ -46,6 +47,7 @@ async function connect() {
   await col('users').createIndex({ email: 1 }, { unique: true });
   await col('users').createIndex({ id: 1 }, { unique: true });
   await col('sessions').createIndex({ token: 1 }, { unique: true });
+  await col('users').createIndex({ invite_hash: 1 }, { sparse: true });
   await col('projects').createIndex({ key: 1 }, { unique: true });
   await col('projects').createIndex({ id: 1 }, { unique: true });
   await col('issues').createIndex({ id: 1 }, { unique: true });
@@ -159,50 +161,200 @@ async function importLinear(csv, userId) {
 
 // ---------- routes ----------
 const routes = [];
-const route = (method, pattern, handler, { auth = true } = {}) =>
-  routes.push({ method, re: new RegExp(`^${pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')}$`), handler, auth });
+const route = (method, pattern, handler, { auth = true, admin = false } = {}) =>
+  routes.push({ method, re: new RegExp(`^${pattern.replace(/:(\w+)/g, '(?<$1>[^/]+)')}$`), handler, auth, admin });
 
-route('GET', '/api/config', () => ({ passwordRequired: !!TEAM_PASSWORD }), { auth: false });
+// ---------- authentication ----------
+const scrypt = promisify(crypto.scrypt);
+const sha = (v) => crypto.createHash('sha256').update(v).digest('hex');
+const INVITE_DAYS = 7;
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
-route('POST', '/api/login', async ({ body, res }) => {
+async function hashPassword(pw) {
+  const salt = crypto.randomBytes(16);
+  return `scrypt$${salt.toString('hex')}$${(await scrypt(pw, salt, 64)).toString('hex')}`;
+}
+async function verifyPassword(pw, stored) {
+  const [, saltHex, keyHex] = (stored || 'scrypt$00$00').split('$');
+  const key = await scrypt(String(pw || ''), Buffer.from(saltHex, 'hex'), 64);
+  const want = Buffer.from(keyHex, 'hex');
+  return !!stored && key.length === want.length && crypto.timingSafeEqual(key, want);
+}
+function checkPassword(pw) {
+  if (typeof pw !== 'string' || pw.length < 8) throw new HttpError(400, 'Password must be at least 8 characters.');
+  if (pw.length > 200) throw new HttpError(400, 'Password is too long.');
+}
+
+// simple in-memory brute-force guard: max attempts per key per window
+const attempts = new Map();
+function throttle(key, max = 8, windowMs = 10 * 60e3) {
+  const t = Date.now(); const a = attempts.get(key);
+  if (a && t - a.t < windowMs) { if (a.n >= max) throw new HttpError(429, 'Too many attempts. Please wait a few minutes and try again.'); a.n++; }
+  else attempts.set(key, { n: 1, t });
+}
+setInterval(() => { const t = Date.now(); for (const [k, a] of attempts) if (t - a.t > 10 * 60e3) attempts.delete(k); }, 60e3).unref();
+const clientIp = (req) => req.socket.remoteAddress || '';
+
+const statusOf = (u) => (u.disabled ? 'disabled' : u.password_hash ? 'active' : u.imported ? 'placeholder' : 'invited');
+const pub = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role || 'member', disabled: !!u.disabled, status: statusOf(u) });
+
+async function startSession(req, res, userId) {
+  const token = crypto.randomBytes(32).toString('hex');
+  await col('sessions').insertOne({ token: sha(token), user_id: userId, created_at: now() });
+  res.setHeader('Set-Cookie', `sid=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${COOKIE_SECURE || req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''}`);
+}
+async function makeInvite(userId) {
+  const token = crypto.randomBytes(32).toString('hex');
+  await col('users').updateOne({ id: userId }, { $set: { invite_hash: sha(token), invite_expires: new Date(Date.now() + INVITE_DAYS * 864e5).toISOString() } });
+  return `/invite/${token}`;
+}
+const findInvite = (token) => col('users').findOne({ invite_hash: sha(String(token)), invite_expires: { $gt: new Date().toISOString() }, disabled: { $ne: true } });
+const needsSetup = async () => !(await col('users').findOne({ role: 'admin', password_hash: { $type: 'string' }, disabled: { $ne: true } }));
+/** Would removing admin rights / access from this user leave the workspace without an active admin? */
+async function lastAdmin(user) {
+  if (user.role !== 'admin' || !user.password_hash || user.disabled) return false;
+  return !(await col('users').findOne({ role: 'admin', password_hash: { $type: 'string' }, disabled: { $ne: true }, id: { $ne: user.id } }));
+}
+
+route('GET', '/api/config', async () => ({ needsSetup: await needsSetup() }), { auth: false });
+
+// First run only: create the workspace's first admin.
+route('POST', '/api/setup', async ({ req, res, body }) => {
+  throttle(`setup|${clientIp(req)}`);
+  if (!(await needsSetup())) throw new HttpError(403, 'This workspace is already set up.');
   const name = String(body.name || '').trim();
   const email = String(body.email || '').trim().toLowerCase();
-  if (!name || !/^\S+@\S+\.\S+$/.test(email)) throw new HttpError(400, 'Enter your name and a valid email.');
-  if (TEAM_PASSWORD && body.password !== TEAM_PASSWORD) throw new HttpError(401, 'Wrong team password.');
+  if (!name || !EMAIL_RE.test(email)) throw new HttpError(400, 'Enter your name and a valid email.');
+  checkPassword(body.password);
+  const hash = await hashPassword(body.password);
   let user = await col('users').findOne({ email }, NO_ID);
-  if (!user) {
-    // claim a placeholder created by the Linear import if the name matches
-    const ghosts = await col('users').find({ imported: 1 }, NO_ID).toArray();
-    const ghost = ghosts.find((g) => g.name.toLowerCase() === name.toLowerCase());
-    if (ghost) {
-      await col('users').updateOne({ id: ghost.id }, { $set: { email, imported: 0 } });
-      user = { ...ghost, email, imported: 0 };
-    } else {
-      user = { id: await nextId('users'), name, email, imported: 0, created_at: now() };
-      await col('users').insertOne({ ...user });
-    }
+  if (user) {
+    await col('users').updateOne({ id: user.id }, { $set: { name, role: 'admin', password_hash: hash, imported: 0, disabled: false }, $unset: { invite_hash: '', invite_expires: '' } });
+    user = { ...user, name, role: 'admin' };
+  } else {
+    user = { id: await nextId('users'), name, email, role: 'admin', password_hash: hash, imported: 0, disabled: false, created_at: now() };
+    await col('users').insertOne({ ...user });
   }
-  const token = crypto.randomBytes(24).toString('hex');
-  await col('sessions').insertOne({ token, user_id: user.id, created_at: now() });
-  res.setHeader('Set-Cookie', `sid=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`);
+  await startSession(req, res, user.id);
   broadcast();
-  return { id: user.id, name: user.name, email: user.email };
+  return pub({ ...user, password_hash: hash });
+}, { auth: false });
+
+route('POST', '/api/login', async ({ req, res, body }) => {
+  const email = String(body.email || '').trim().toLowerCase();
+  throttle(`login|${clientIp(req)}|${email}`);
+  const user = await col('users').findOne({ email }, NO_ID);
+  const ok = await verifyPassword(body.password, user?.password_hash); // always hash, so timing doesn't reveal accounts
+  if (!user || !ok) throw new HttpError(401, 'Wrong email or password.');
+  if (user.disabled) throw new HttpError(403, 'This account has been disabled. Please ask your admin.');
+  attempts.delete(`login|${clientIp(req)}|${email}`);
+  await startSession(req, res, user.id);
+  return pub(user);
 }, { auth: false });
 
 route('POST', '/api/logout', async ({ req, res }) => {
   const sid = cookie(req, 'sid');
-  if (sid) await col('sessions').deleteOne({ token: sid });
+  if (sid) await col('sessions').deleteOne({ token: sha(sid) });
   res.setHeader('Set-Cookie', 'sid=; Path=/; Max-Age=0');
   return { ok: true };
 }, { auth: false });
 
+// Invited person opens their personal link and chooses a password.
+route('GET', '/api/invite/:token', async ({ params }) => {
+  const u = await findInvite(params.token);
+  if (!u) throw new HttpError(404, 'This invite link is invalid or has expired. Please ask your admin for a new one.');
+  return { name: u.name, email: u.email, reset: !!u.password_hash };
+}, { auth: false });
+
+route('POST', '/api/invite/:token', async ({ req, res, params, body }) => {
+  throttle(`invite|${clientIp(req)}`, 20);
+  const u = await findInvite(params.token);
+  if (!u) throw new HttpError(404, 'This invite link is invalid or has expired. Please ask your admin for a new one.');
+  checkPassword(body.password);
+  const name = String(body.name || '').trim() || u.name;
+  await col('users').updateOne({ id: u.id }, { $set: { password_hash: await hashPassword(body.password), name, imported: 0 }, $unset: { invite_hash: '', invite_expires: '' } });
+  await col('sessions').deleteMany({ user_id: u.id });
+  await startSession(req, res, u.id);
+  broadcast();
+  return pub({ ...u, name, password_hash: 'x' });
+}, { auth: false });
+
+route('POST', '/api/me/password', async ({ req, body, user }) => {
+  const u = await col('users').findOne({ id: user.id });
+  if (!(await verifyPassword(body.current, u.password_hash))) throw new HttpError(400, 'Your current password is wrong.');
+  checkPassword(body.next);
+  await col('users').updateOne({ id: u.id }, { $set: { password_hash: await hashPassword(body.next) } });
+  await col('sessions').deleteMany({ user_id: u.id, token: { $ne: sha(cookie(req, 'sid') || '') } }); // sign out other devices
+  return { ok: true };
+});
+
 route('GET', '/api/state', async ({ user }) => ({
   me: user,
-  passwordRequired: !!TEAM_PASSWORD,
-  users: (await col('users').find({}, { projection: { _id: 0, id: 1, name: 1, email: 1 } }).sort({ name: 1 }).toArray()),
+  users: (await col('users').find({}, NO_ID).sort({ name: 1 }).toArray()).map(pub),
   projects: await col('projects').find({}, NO_ID).sort({ name: 1 }).toArray(),
   issues: await decorate(await col('issues').find({}, NO_ID).sort({ updated_at: -1 }).toArray()),
 }));
+
+// ----- admin: manage people -----
+route('POST', '/api/admin/users', async ({ body }) => {
+  const name = String(body.name || '').trim();
+  const email = String(body.email || '').trim().toLowerCase();
+  const role = body.role === 'admin' ? 'admin' : 'member';
+  if (!name || !EMAIL_RE.test(email)) throw new HttpError(400, 'Enter a name and a valid email.');
+  let user = await col('users').findOne({ email }, NO_ID);
+  if (user?.password_hash) throw new HttpError(409, `${email} already has an account.`);
+  if (user) {
+    await col('users').updateOne({ id: user.id }, { $set: { name, role, disabled: false } });
+  } else {
+    // reuse a placeholder left by the Linear import with the same name so existing assignments carry over
+    const ghost = (await col('users').find({ imported: 1, password_hash: { $exists: false } }, NO_ID).toArray()).find((g) => g.name.toLowerCase() === name.toLowerCase());
+    if (ghost) { await col('users').updateOne({ id: ghost.id }, { $set: { email, role, imported: 0, disabled: false } }); user = { ...ghost }; }
+    else {
+      user = { id: await nextId('users'), name, email, role, imported: 0, disabled: false, created_at: now() };
+      await col('users').insertOne({ ...user });
+    }
+  }
+  const invite_path = await makeInvite(user.id);
+  broadcast();
+  return { user: pub(await col('users').findOne({ id: user.id }, NO_ID)), invite_path };
+}, { admin: true });
+
+route('POST', '/api/admin/users/:id/invite', async ({ params }) => {
+  const u = await col('users').findOne({ id: Number(params.id) }, NO_ID);
+  if (!u) throw new HttpError(404, 'User not found.');
+  if (u.disabled) throw new HttpError(400, 'Enable this person first.');
+  if (u.email.endsWith('@imported.local')) throw new HttpError(400, 'Set a real email for this person first.');
+  return { invite_path: await makeInvite(u.id) }; // for active users this acts as a password reset link
+}, { admin: true });
+
+route('PATCH', '/api/admin/users/:id', async ({ params, body, user: me }) => {
+  const u = await col('users').findOne({ id: Number(params.id) }, NO_ID);
+  if (!u) throw new HttpError(404, 'User not found.');
+  const set = {};
+  if ('name' in body) { const n = String(body.name).trim(); if (!n) throw new HttpError(400, 'Name is required.'); set.name = n; }
+  if ('email' in body) {
+    const e = String(body.email).trim().toLowerCase();
+    if (!EMAIL_RE.test(e)) throw new HttpError(400, 'Enter a valid email.');
+    if (e !== u.email && (await col('users').findOne({ email: e }))) throw new HttpError(409, `${e} is already used.`);
+    set.email = e;
+  }
+  if ('role' in body) {
+    if (!['admin', 'member'].includes(body.role)) throw new HttpError(400, 'Bad role.');
+    if (body.role !== (u.role || 'member') && body.role === 'member' && (await lastAdmin(u))) throw new HttpError(400, 'There must be at least one admin.');
+    set.role = body.role;
+  }
+  if ('disabled' in body) {
+    if (body.disabled && u.id === me.id) throw new HttpError(400, "You can't disable your own account.");
+    if (body.disabled && (await lastAdmin(u))) throw new HttpError(400, 'There must be at least one active admin.');
+    set.disabled = !!body.disabled;
+  }
+  if (Object.keys(set).length) {
+    await col('users').updateOne({ id: u.id }, { $set: set });
+    if (set.disabled) await col('sessions').deleteMany({ user_id: u.id }); // sign them out everywhere
+    broadcast();
+  }
+  return pub(await col('users').findOne({ id: u.id }, NO_ID));
+}, { admin: true });
 
 route('POST', '/api/projects', async ({ body }) => {
   const name = String(body.name || '').trim();
@@ -214,7 +366,7 @@ route('POST', '/api/projects', async ({ body }) => {
   await col('projects').insertOne({ ...project });
   broadcast();
   return project;
-});
+}, { admin: true });
 
 route('DELETE', '/api/projects/:id', async ({ params }) => {
   const pid = Number(params.id);
@@ -224,7 +376,7 @@ route('DELETE', '/api/projects/:id', async ({ params }) => {
   await col('projects').deleteOne({ id: pid });
   broadcast();
   return { ok: true };
-});
+}, { admin: true });
 
 route('POST', '/api/issues', async ({ body, user }) => {
   const title = String(body.title || '').trim();
@@ -306,7 +458,7 @@ route('POST', '/api/import/linear', async ({ body, user }) => {
   const stats = await importLinear(String(body.csv || ''), user.id);
   broadcast();
   return stats;
-});
+}, { admin: true });
 
 route('GET', '/api/events', ({ res }) => {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
@@ -345,6 +497,7 @@ function serveStatic(req, res, pathname) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
+  if (url.pathname.startsWith('/invite/')) return serveStatic(req, res, '/'); // the app reads the token from the URL
   if (!url.pathname.startsWith('/api/')) return serveStatic(req, res, decodeURIComponent(url.pathname));
   const send = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
   try {
@@ -353,10 +506,12 @@ const server = http.createServer(async (req, res) => {
     let user = null;
     const sid = cookie(req, 'sid');
     if (sid) {
-      const s = await col('sessions').findOne({ token: sid });
-      if (s) user = await col('users').findOne({ id: s.user_id }, { projection: { _id: 0, id: 1, name: 1, email: 1 } });
+      const s = await col('sessions').findOne({ token: sha(sid) });
+      const u = s && await col('users').findOne({ id: s.user_id }, NO_ID);
+      if (u && !u.disabled) user = pub(u);
     }
     if (r.auth && !user) throw new HttpError(401, 'Not signed in');
+    if (r.admin && user.role !== 'admin') throw new HttpError(403, 'Only admins can do this.');
     const body = req.method === 'GET' || req.method === 'DELETE' ? {} : await readBody(req);
     const out = await r.handler({ req, res, body, user, params: r.re.exec(url.pathname).groups || {} });
     if (out !== undefined) send(200, out);
@@ -370,4 +525,4 @@ const pingTimer = setInterval(() => { for (const res of clients) res.write(': pi
 pingTimer.unref();
 
 await connect();
-server.listen(PORT, () => console.log(`Abatask running → http://localhost:${PORT}  (MongoDB: ${MONGODB_DB})${TEAM_PASSWORD ? '  (team password on)' : ''}`));
+server.listen(PORT, () => console.log(`Abatask running → http://localhost:${PORT}  (MongoDB: ${MONGODB_DB})`));

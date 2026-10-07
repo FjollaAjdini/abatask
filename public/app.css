@@ -145,3 +145,20 @@ button { font: inherit; color: inherit; }
 @keyframes slide { from { transform: translateX(40px); opacity: 0 } }
 @keyframes pop { from { transform: translate(-50%, 8px); opacity: 0 } }
 kbd { font: 600 11px var(--mky-font-body); background: #fff; border: 1px solid var(--mky-stroke-primary); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+
+/* ---------- Team / invites ---------- */
+.hr { border: 0; border-top: 1px solid var(--mky-border); width: 100%; margin: 4px 0; }
+.team { display: flex; flex-direction: column; border: 1px solid var(--mky-border); border-radius: 12px; }
+.team__row { display: grid; grid-template-columns: 24px 1fr auto 104px auto; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--mky-border); }
+.team__row:last-child { border-bottom: 0; }
+.team__row.is-off { opacity: .6; }
+.team__who { min-width: 0; line-height: 1.3; }
+.team__who b { font-size: 14px; display: block; }
+.team__who > span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.team__acts { display: flex; gap: 2px; justify-content: flex-end; }
+.tag--gold { background: var(--mky-stroke-accent); color: #7C5C22; }
+.tag--grey { background: #EEF0F4; color: var(--muted); }
+.invite { background: var(--mky-stroke-accent-subtle); border: 1px solid var(--mky-stroke-accent); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.invite__row { display: flex; gap: 8px; }
+.invite__row input { flex: 1; font-size: 12px; padding: 8px 10px; }
+@media (max-width: 640px) { .team__row { grid-template-columns: 24px 1fr auto; } .team__row .js-role, .team__acts { grid-column: 2 / -1; justify-content: flex-start; } }

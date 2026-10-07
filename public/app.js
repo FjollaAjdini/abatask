@@ -14,7 +14,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const initials = (n) => (n || '?').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 const state = {
-  me: null, users: [], projects: [], issues: [], passwordRequired: false,
+  me: null, users: [], projects: [], issues: [],
   scope: 'all',             // 'all' | 'mine' | project id
   layout: localStorage.getItem('layout') || 'list',
   q: '', fStatus: '', fAssignee: '', fPriority: '',
@@ -25,7 +25,7 @@ const state = {
 async function api(method, url, body) {
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
-  if (res.status === 401 && url !== '/api/login') { state.me = null; renderLogin(); throw new Error('signed out'); }
+  if (res.status === 401 && url !== '/api/login') { showAuth(); throw new Error('signed out'); }
   if (!res.ok) throw new Error(data.error || 'Something went wrong');
   return data;
 }
@@ -64,6 +64,8 @@ const I = {
 const avatar = (u, cls = '') => u ? `<span class="avatar ${cls}" title="${esc(u.name)}">${esc(initials(u.name))}</span>` : `<span class="avatar avatar--empty ${cls}" title="Unassigned">${svg('<path d="M8 4v8M4 8h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>', 10)}</span>`;
 
 // ---------- selectors ----------
+const isAdmin = () => state.me?.role === 'admin';
+const assignable = (keepId) => state.users.filter((u) => !u.disabled || u.id === keepId);
 const userById = (id) => state.users.find((u) => u.id === id);
 const projectById = (id) => state.projects.find((p) => p.id === id);
 const ident = (i) => `${i.project_key}-${i.number}`;
@@ -117,10 +119,11 @@ function connectEvents() {
   es.onmessage = () => { clearTimeout(t); t = setTimeout(() => state.me && refresh().catch(() => {}), 150); };
 }
 
-// ---------- login ----------
-// The password input only exists when a team password is set, so browsers don't offer saved logins otherwise.
-const pwField = () => '<div class="mky-field"><label class="mky-label" for="lp">Team password</label><input class="mky-input" id="lp" type="password" autocomplete="off"></div>';
-function renderLogin() {
+// ---------- auth screens ----------
+const field = (id, label, type = 'text', extra = '') => `<div class="mky-field"><label class="mky-label" for="${id}">${label}</label><input class="mky-input" id="${id}" type="${type}" ${extra}></div>`;
+
+/** Renders the split login layout with a form and wires its submit handler. */
+function authScreen({ title, sub, fields, button, onSubmit, footer = '' }) {
   $('#drawer').innerHTML = ''; $('#modal').innerHTML = '';
   $('#app').innerHTML = `
   <div class="login">
@@ -129,26 +132,64 @@ function renderLogin() {
       <h1 class="login__headline">Keep every task in <span class="mky-hl">one place</span>.</h1>
       <span style="opacity:.7;font-size:14px">${esc(APP_NAME)} ${esc(APP_BYLINE)}</span>
     </div>
-    <form class="login__form" id="loginForm">
-      <h2>Sign in</h2>
-      <p class="muted" style="margin:0 0 8px">New here? Just enter your name and email and you're in.</p>
-      <div class="mky-field"><label class="mky-label" for="ln">Name</label><input class="mky-input" id="ln" autocomplete="off" required autofocus></div>
-      <div class="mky-field"><label class="mky-label" for="le">Email</label><input class="mky-input" id="le" type="email" autocomplete="off" required></div>
-      <div id="pwslot">${state.passwordRequired ? pwField() : ''}</div>
-      <div class="err" id="lerr"></div>
-      <button class="mky-btn mky-btn--primary" type="submit">Continue</button>
+    <form class="login__form" id="authForm">
+      <h2>${title}</h2>
+      <p class="muted" style="margin:0 0 8px">${sub}</p>
+      ${fields}
+      <div class="err" id="lerr" role="alert"></div>
+      <button class="mky-btn mky-btn--primary" type="submit">${button}</button>
+      ${footer}
     </form>
   </div>`;
-  $('#loginForm').addEventListener('submit', async (e) => {
+  $('#authForm input')?.focus();
+  $('#authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    try {
-      await api('POST', '/api/login', { name: $('#ln').value, email: $('#le').value, password: $('#lp')?.value });
-      await boot();
-    } catch (err) {
-      $('#lerr').textContent = err.message;
-      if (/password/i.test(err.message) && !$('#lp')) $('#pwslot').innerHTML = pwField();
-    }
+    const btn = $('#authForm button[type=submit]'); btn.disabled = true; $('#lerr').textContent = '';
+    try { await onSubmit(); } catch (err) { $('#lerr').textContent = err.message; btn.disabled = false; }
   });
+}
+const matchPw = () => { if ($('#pw').value !== $('#pw2').value) throw new Error("The two passwords don't match."); return $('#pw').value; };
+
+async function showAuth() {
+  state.me = null; state.openId = null;
+  const m = /^\/invite\/([a-f0-9]+)$/.exec(location.pathname);
+  if (m) return renderInvite(m[1]);
+  const cfg = await fetch('/api/config').then((r) => r.json()).catch(() => ({}));
+  return cfg.needsSetup ? renderSetup() : renderLogin();
+}
+
+function renderLogin() {
+  authScreen({
+    title: 'Sign in', sub: `Welcome back to ${esc(APP_NAME)}.`,
+    fields: field('le', 'Email', 'email', 'autocomplete="username" required') + field('pw', 'Password', 'password', 'autocomplete="current-password" required'),
+    button: 'Sign in',
+    footer: '<p class="muted" style="margin:4px 0 0;font-size:13px">No account or forgot your password? Ask your workspace admin for an invite link.</p>',
+    onSubmit: async () => { await api('POST', '/api/login', { email: $('#le').value, password: $('#pw').value }); await boot(); },
+  });
+}
+function renderSetup() {
+  authScreen({
+    title: 'Set up your workspace', sub: 'Create the first account. You will be the admin and can invite everyone else.',
+    fields: field('ln', 'Your name', 'text', 'autocomplete="name" required') + field('le', 'Email', 'email', 'autocomplete="username" required') +
+      field('pw', 'Password (8+ characters)', 'password', 'autocomplete="new-password" minlength="8" required') + field('pw2', 'Repeat password', 'password', 'autocomplete="new-password" required'),
+    button: 'Create workspace',
+    onSubmit: async () => { const password = matchPw(); await api('POST', '/api/setup', { name: $('#ln').value, email: $('#le').value, password }); await boot(); },
+  });
+}
+async function renderInvite(token) {
+  let inv;
+  try { inv = await api('GET', `/api/invite/${token}`); } catch (e) {
+    return authScreen({ title: 'Invite not valid', sub: esc(e.message), fields: '', button: 'Go to sign in', onSubmit: async () => { history.replaceState(null, '', '/'); await showAuth(); } });
+  }
+  authScreen({
+    title: inv.reset ? 'Choose a new password' : `Welcome, ${esc(inv.name)}`,
+    sub: inv.reset ? `Set a new password for ${esc(inv.email)}.` : `You've been invited to ${esc(APP_NAME)}. Choose a password to join the workspace.`,
+    fields: field('le', 'Email', 'email', `value="${esc(inv.email)}" autocomplete="username" readonly`) +
+      field('pw', 'Password (8+ characters)', 'password', 'autocomplete="new-password" minlength="8" required') + field('pw2', 'Repeat password', 'password', 'autocomplete="new-password" required'),
+    button: inv.reset ? 'Save password' : 'Join workspace',
+    onSubmit: async () => { const password = matchPw(); await api('POST', `/api/invite/${token}`, { password }); history.replaceState(null, '', '/'); await boot(); },
+  });
+  $('#pw').focus();
 }
 
 // ---------- shell ----------
@@ -173,12 +214,13 @@ function renderSidebar() {
     <button class="mky-btn mky-btn--primary mky-btn--sm" data-act="new-issue" style="margin:0 4px 8px">${I.plus} New issue <kbd style="margin-left:auto;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);color:#fff">C</kbd></button>
     ${nav('mine', I.mine, 'My issues', mine)}
     ${nav('all', I.all, 'All issues', state.issues.filter((i) => !['done', 'canceled'].includes(i.status)).length)}
-    <div class="side__label">Projects <button class="iconbtn" data-act="new-project" title="New project">${I.plus}</button></div>
+    <div class="side__label">Projects ${isAdmin() ? `<button class="iconbtn" data-act="new-project" title="New project">${I.plus}</button>` : ''}</div>
     ${state.projects.map((p) => nav(p.id, `<span class="dot" style="background:${esc(p.color)}"></span>`, p.name, open(p.id))).join('') || '<div class="muted" style="padding:6px 10px;font-size:13px">No projects yet</div>'}
+    ${isAdmin() ? `<div class="side__label">Workspace</div><button class="nav" data-act="team">${I.mine}Team<span class="count">${state.users.filter((u) => !u.disabled && u.status !== 'placeholder').length}</span></button>` : ''}
     <div class="side__foot">
       ${avatar(state.me, 'avatar--lg')}
-      <div class="who"><b>${esc(state.me.name)}</b><span>${esc(state.me.email)}</span></div>
-      <button class="iconbtn" data-act="settings" title="Import / settings" aria-label="Settings">${svg('<circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>')}</button>
+      <div class="who"><b>${esc(state.me.name)}</b><span>${isAdmin() ? 'Admin' : 'Member'}</span></div>
+      <button class="iconbtn" data-act="settings" title="Account" aria-label="Account settings">${svg('<circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>')}</button>
     </div>`;
 }
 
@@ -225,8 +267,8 @@ function renderContent() {
   const items = visible();
   const lbl = $('#countLabel'); if (lbl) lbl.textContent = `${items.length} issue${items.length === 1 ? '' : 's'}`;
   if (!state.projects.length) {
-    el.innerHTML = `<div class="empty"><h3>Start with a project</h3><p>Projects group your issues and give them IDs like <b>MKY-12</b>.<br>You can also import everything from Linear.</p>
-      <button class="mky-btn mky-btn--primary" data-act="new-project">Create a project</button> <button class="mky-btn mky-btn--outline" data-act="settings">Import from Linear</button></div>`;
+    el.innerHTML = `<div class="empty"><h3>${isAdmin() ? 'Start with a project' : 'No projects yet'}</h3><p>${isAdmin() ? 'Projects group your issues and give them IDs like <b>MKY-12</b>.<br>You can also import everything from Linear.' : 'Ask a workspace admin to create the first project.'}</p>
+      ${isAdmin() ? '<button class="mky-btn mky-btn--primary" data-act="new-project">Create a project</button> <button class="mky-btn mky-btn--outline" data-act="settings">Import from Linear</button>' : ''}</div>`;
     return;
   }
   if (!items.length) {
@@ -288,7 +330,7 @@ function renderDrawer() {
     <div class="drawer__props">
       <div class="prop"><label for="pStatus">Status</label><select class="mky-select" id="pStatus">${STATUSES.map((s) => opt(s, STATUS_LABEL[s], i.status)).join('')}</select></div>
       <div class="prop"><label for="pPrio">Priority</label><select class="mky-select" id="pPrio">${PRIORITIES.map(([v, l]) => opt(v, l, i.priority)).join('')}</select></div>
-      <div class="prop"><label for="pAssignee">Assignee</label><select class="mky-select" id="pAssignee">${opt('', 'Unassigned', i.assignee_id || '')}${state.users.map((u) => opt(u.id, u.name, i.assignee_id)).join('')}</select></div>
+      <div class="prop"><label for="pAssignee">Assignee</label><select class="mky-select" id="pAssignee">${opt('', 'Unassigned', i.assignee_id || '')}${assignable(i.assignee_id).map((u) => opt(u.id, u.name, i.assignee_id)).join('')}</select></div>
       <div class="prop"><label for="pDue">Due date</label><input class="mky-input" type="date" id="pDue" value="${esc(i.due_date || '')}"></div>
       <div class="prop"><label for="pLabels">Labels</label><input class="mky-input" id="pLabels" placeholder="bug, design…" value="${esc(i.labels.join(', '))}"></div>
       <div class="prop"><label>Project</label><div style="font-size:14px;font-weight:600">${esc(projectById(i.project_id)?.name || '')}</div></div>
@@ -325,7 +367,7 @@ function closeModal() { $('#modal').innerHTML = ''; }
 function modal(html) { $('#modal').innerHTML = `<div class="scrim" data-act="close-modal"></div><div class="modal" role="dialog">${html}</div>`; }
 
 function newIssueModal() {
-  if (!state.projects.length) return newProjectModal();
+  if (!state.projects.length) return isAdmin() ? newProjectModal() : toast('No projects yet — ask an admin to create one.');
   const defProject = typeof state.scope === 'number' ? state.scope : (JSON.parse(localStorage.getItem('lastProject') || 'null') ?? state.projects[0].id);
   const opt = (v, l, cur) => `<option value="${v}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`;
   modal(`<h2>New issue</h2>
@@ -337,7 +379,7 @@ function newIssueModal() {
       <select class="mky-select" id="nPrio" aria-label="Priority">${PRIORITIES.map(([v, l]) => opt(v, l, 0)).join('')}</select>
     </div>
     <div class="modal__row">
-      <select class="mky-select" id="nAssignee" aria-label="Assignee">${opt('', 'Unassigned', '')}${state.users.map((u) => opt(u.id, u.name, state.scope === 'mine' ? state.me.id : '')).join('')}</select>
+      <select class="mky-select" id="nAssignee" aria-label="Assignee">${opt('', 'Unassigned', '')}${assignable().map((u) => opt(u.id, u.name, state.scope === 'mine' ? state.me.id : '')).join('')}</select>
       <input class="mky-input" type="date" id="nDue" aria-label="Due date">
       <input class="mky-input" id="nLabels" placeholder="Labels, comma separated" aria-label="Labels">
     </div>
@@ -360,6 +402,7 @@ async function createIssue() {
 
 let pickedColor = PROJECT_COLORS[0];
 function newProjectModal() {
+  if (!isAdmin()) return toast('Only admins can create projects.');
   pickedColor = PROJECT_COLORS[state.projects.length % PROJECT_COLORS.length];
   modal(`<h2>New project</h2>
     <div class="modal__row"><div class="mky-field" style="flex:3"><label class="mky-label" for="pjName">Name</label><input class="mky-input" id="pjName" placeholder="e.g. Marketing" autofocus></div>
@@ -379,14 +422,81 @@ async function createProject() {
 }
 
 function settingsModal() {
-  modal(`<h2>Import from Linear</h2>
+  modal(`<h2>Account</h2>
+    <p class="muted" style="margin:0">Signed in as <b>${esc(state.me.name)}</b> (${esc(state.me.email)}) · ${isAdmin() ? 'Admin' : 'Member'}</p>
+    <h3 class="sect">Change password</h3>
+    <div class="modal__row">
+      <input class="mky-input" type="password" id="pwCur" placeholder="Current password" autocomplete="current-password" aria-label="Current password">
+      <input class="mky-input" type="password" id="pwNew" placeholder="New password (8+ characters)" autocomplete="new-password" aria-label="New password">
+    </div>
+    <div class="err" id="pwErr"></div>
+    <div><button class="mky-btn mky-btn--outline mky-btn--sm" data-act="change-password">Update password</button></div>
+    ${isAdmin() ? `<hr class="hr"><h3 class="sect">Import from Linear</h3>
     <p class="muted" style="margin:0">In Linear: <b>Settings → Workspace → Import/Export → Export CSV</b>. Upload the file here — issues keep their IDs (e.g. MKY-12), status, priority, assignee, labels and due dates. Safe to run twice; existing issues are skipped.</p>
     <input type="file" id="csvFile" accept=".csv,text/csv" class="mky-input">
     <div class="err" id="iErr"></div>
+    <div><button class="mky-btn mky-btn--outline mky-btn--sm" data-act="do-import">Import</button></div>` : ''}
     <div class="modal__foot"><button class="mky-btn mky-btn--ghost" data-act="close-modal">Close</button>
-      <button class="mky-btn mky-btn--primary" data-act="do-import">Import</button></div>
-    <hr style="border:0;border-top:1px solid var(--mky-border);width:100%">
-    <div class="modal__foot"><span class="hint">Signed in as ${esc(state.me.email)}</span><button class="mky-btn mky-btn--outline mky-btn--sm" data-act="logout">Sign out</button></div>`);
+      <button class="mky-btn mky-btn--outline" data-act="logout">Sign out</button></div>`);
+}
+async function changePassword() {
+  try {
+    await api('POST', '/api/me/password', { current: $('#pwCur').value, next: $('#pwNew').value });
+    closeModal(); toast('Password updated');
+  } catch (e) { $('#pwErr').textContent = e.message; }
+}
+
+// ----- Team (admin) -----
+let lastInvite = null; // { name, url, reset }
+const STATUS_BADGE = { active: ['Active', ''], invited: ['Invited', 'tag--gold'], disabled: ['Disabled', 'tag--grey'], placeholder: ['Imported', 'tag--grey'] };
+function teamModal() {
+  const rows = state.users.map((u) => {
+    const [label, cls] = STATUS_BADGE[u.status] || ['', ''];
+    const self = u.id === state.me.id;
+    return `<div class="team__row ${u.disabled ? 'is-off' : ''}">
+      ${avatar(u)}
+      <div class="team__who"><b>${esc(u.name)}${self ? ' <span class="muted">(you)</span>' : ''}</b><span>${u.status === 'placeholder' ? 'From Linear import — no account yet' : esc(u.email)}</span></div>
+      <span class="tag ${cls}">${label}</span>
+      <select class="mky-select field-sm js-role" data-id="${u.id}" aria-label="Role for ${esc(u.name)}" ${self || u.status === 'placeholder' ? 'disabled' : ''}>
+        <option value="member" ${u.role !== 'admin' ? 'selected' : ''}>Member</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option></select>
+      <span class="team__acts">
+        ${u.status === 'active' || u.status === 'invited' ? `<button class="mky-btn mky-btn--ghost mky-btn--sm" data-act="team-invite" data-id="${u.id}">${u.status === 'active' ? 'Reset password' : 'Invite link'}</button>` : ''}
+        ${!self && u.status !== 'placeholder' ? `<button class="mky-btn mky-btn--ghost mky-btn--sm" style="${u.disabled ? '' : 'color:var(--danger)'}" data-act="team-toggle" data-id="${u.id}">${u.disabled ? 'Enable' : 'Disable'}</button>` : ''}
+      </span></div>`;
+  }).join('');
+  modal(`<h2>Team</h2>
+    <p class="muted" style="margin:0">Add people here. Each person gets a personal link to choose their own password — there is no public sign-up.</p>
+    ${lastInvite ? `<div class="invite"><b>${lastInvite.reset ? 'Password reset link' : 'Invite link'} for ${esc(lastInvite.name)}</b>
+      <span class="muted">Send it to them privately. It works once and expires in 7 days.</span>
+      <div class="invite__row"><input class="mky-input" id="inviteUrl" readonly value="${esc(lastInvite.url)}" aria-label="Invite link"><button class="mky-btn mky-btn--primary mky-btn--sm" data-act="copy-invite">Copy</button></div></div>` : ''}
+    <div class="team">${rows}</div>
+    <hr class="hr"><h3 class="sect">Add a person</h3>
+    <div class="modal__row">
+      <input class="mky-input" id="tName" placeholder="Full name" autocomplete="off" aria-label="Name">
+      <input class="mky-input" id="tEmail" type="email" placeholder="Email" autocomplete="off" aria-label="Email">
+      <select class="mky-select" id="tRole" aria-label="Role"><option value="member">Member</option><option value="admin">Admin</option></select>
+    </div>
+    <div class="err" id="tErr"></div>
+    <div class="modal__foot"><span class="hint">Members can create and edit issues. Admins can also manage people, projects and imports.</span>
+      <button class="mky-btn mky-btn--ghost" data-act="close-modal">Close</button>
+      <button class="mky-btn mky-btn--primary" data-act="team-add">Add &amp; get invite link</button></div>`);
+}
+const inviteUrl = (path) => location.origin + path;
+async function teamAdd() {
+  try {
+    const r = await api('POST', '/api/admin/users', { name: $('#tName').value, email: $('#tEmail').value, role: $('#tRole').value });
+    lastInvite = { name: r.user.name, url: inviteUrl(r.invite_path), reset: false };
+    await load(); renderSidebar(); teamModal();
+  } catch (e) { $('#tErr').textContent = e.message; }
+}
+async function teamInvite(id) {
+  const r = await run(() => api('POST', `/api/admin/users/${id}/invite`)); if (!r) return;
+  const u = userById(id); lastInvite = { name: u.name, url: inviteUrl(r.invite_path), reset: u.status === 'active' };
+  teamModal();
+}
+async function teamPatch(id, patch) {
+  await run(() => api('PATCH', `/api/admin/users/${id}`, patch));
+  await load(); renderSidebar(); renderContent(); teamModal();
 }
 async function doImport() {
   const f = $('#csvFile').files[0]; if (!f) { $('#iErr').textContent = 'Choose a CSV file first.'; return; }
@@ -406,7 +516,7 @@ document.addEventListener('click', async (e) => {
     const i = state.issues.find((x) => x.id === id);
     if (act === 'pick-status') popover(a, STATUSES.map((s) => [s, STATUS_LABEL[s], statusIcon(s)]), (v) => patchIssue(id, { status: v }));
     if (act === 'pick-priority') popover(a, PRIORITIES.map(([v, l]) => [v, l, prioIcon(v)]), (v) => patchIssue(id, { priority: Number(v) }));
-    if (act === 'pick-assignee') popover(a, [['', 'Unassigned', avatar(null)], ...state.users.map((u) => [u.id, u.name, avatar(u)])], (v) => patchIssue(id, { assignee_id: v ? Number(v) : null }));
+    if (act === 'pick-assignee') popover(a, [['', 'Unassigned', avatar(null)], ...assignable(i?.assignee_id).map((u) => [u.id, u.name, avatar(u)])], (v) => patchIssue(id, { assignee_id: v ? Number(v) : null }));
     return void i;
   }
   closePop();
@@ -418,6 +528,12 @@ document.addEventListener('click', async (e) => {
     case 'new-issue': newIssueModal(); break;
     case 'new-project': newProjectModal(); break;
     case 'settings': settingsModal(); break;
+    case 'team': lastInvite = null; teamModal(); break;
+    case 'team-add': teamAdd(); break;
+    case 'team-invite': teamInvite(id); break;
+    case 'team-toggle': { const u = userById(id); if (!u.disabled && !confirm(`Disable ${u.name}? They will be signed out and can no longer use the workspace.`)) break; teamPatch(id, { disabled: !u.disabled }); break; }
+    case 'copy-invite': { const el = $('#inviteUrl'); el.select(); navigator.clipboard?.writeText(el.value).then(() => toast('Link copied'), () => toast('Press ⌘/Ctrl+C to copy')); break; }
+    case 'change-password': changePassword(); break;
     case 'close-modal': closeModal(); break;
     case 'create-issue': createIssue(); break;
     case 'create-project': createProject(); break;
@@ -428,7 +544,7 @@ document.addEventListener('click', async (e) => {
     case 'delete-issue':
       if (confirm('Delete this issue permanently?')) { const d = state.openId; closeDrawer(); await run(() => api('DELETE', `/api/issues/${d}`)); await refresh(); toast('Issue deleted'); }
       break;
-    case 'logout': await api('POST', '/api/logout'); state.me = null; renderLogin(); break;
+    case 'logout': await api('POST', '/api/logout'); await showAuth(); break;
   }
 });
 
@@ -436,6 +552,7 @@ document.addEventListener('input', (e) => {
   if (e.target.id === 'search') { state.q = e.target.value; renderContent(); }
 });
 document.addEventListener('change', (e) => {
+  if (e.target.classList?.contains('js-role')) return teamPatch(Number(e.target.dataset.id), { role: e.target.value });
   const map = { fStatus: 'fStatus', fAssignee: 'fAssignee', fPriority: 'fPriority' };
   if (map[e.target.id]) { state[map[e.target.id]] = e.target.value; renderContent(); }
 });
@@ -464,10 +581,8 @@ document.addEventListener('drop', (e) => {
 // ---------- boot ----------
 let eventsConnected = false;
 async function boot() {
-  try { await load(); } catch {
-    state.passwordRequired = (await fetch('/api/config').then((r) => r.json()).catch(() => ({}))).passwordRequired;
-    return renderLogin();
-  }
+  if (/^\/invite\/[a-f0-9]+$/.test(location.pathname)) return showAuth(); // invite links always open the join screen
+  try { await load(); } catch { return showAuth(); }
   renderShell();
   if (!eventsConnected) { connectEvents(); eventsConnected = true; }
   const hash = Number((location.hash || '').slice(1));

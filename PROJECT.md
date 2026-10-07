@@ -12,10 +12,15 @@ moneykey / MKY teams who need one shared place to create, assign, track and disc
 
 ## Features
 
-### Sign-in
-- Sign in with name and email. New people are created automatically on first sign-in.
-- Optional shared **team password** (set with `TEAM_PASSWORD`).
-- Sessions stay signed in for a year via a secure cookie.
+### Accounts and access
+- **Private workspace:** there is no public sign-up. The first person to open a fresh install creates the workspace and becomes the **admin**.
+- **Admins add people** from the **Team** screen. Each person gets a personal **invite link** (valid for 7 days, single use) and chooses their own password. Admins send the link themselves, e.g. by chat.
+- **Two roles:**
+  - *Member:* create and edit issues, comment, and use all views.
+  - *Admin:* everything a member can do, plus manage people, create projects and import from Linear.
+- **Admins can also:** change a person's role, send a **password-reset link**, and **disable** or re-enable someone. Disabling signs that person out immediately and keeps their issues. The last admin can't be demoted or disabled.
+- **Everyone can** change their own password (Account, via the gear icon in the sidebar).
+- Passwords are stored hashed (scrypt), login attempts are rate limited, and sessions are stored hashed.
 
 ### Projects
 - Create projects with a name, a short **key** (2–6 letters, e.g. `MKY`) and a colour.
@@ -71,7 +76,7 @@ Migrate from Linear: export a CSV in Linear (**Settings → Workspace → Import
 
 ## What it doesn't do (yet)
 
-Cycles or sprints, roadmaps, @mentions, email or push notifications, file attachments, roles and permissions, single sign-on, and a user interface for deleting projects.
+Cycles or sprints, roadmaps, @mentions, email or push notifications (invite links are shared by hand, no email is sent), file attachments, finer-grained permissions per project, single sign-on, and a user interface for deleting projects.
 
 ## How it's built
 
@@ -100,7 +105,12 @@ public/
 ### API summary
 | Method | Endpoint | Purpose |
 |---|---|---|
+| GET, POST | `/api/config`, `/api/setup` | Check for and run first-run setup (first admin) |
 | POST | `/api/login`, `/api/logout` | Sign in or out |
+| GET, POST | `/api/invite/:token` | Open an invite link and set a password |
+| POST | `/api/me/password` | Change your own password |
+| POST, PATCH | `/api/admin/users`, `/api/admin/users/:id` | Admin: add, edit, disable people |
+| POST | `/api/admin/users/:id/invite` | Admin: new invite or password-reset link |
 | GET | `/api/state` | Everything the app needs: user, people, projects, issues |
 | POST | `/api/projects` | Create a project |
 | POST | `/api/issues` | Create an issue |
@@ -123,10 +133,11 @@ MONGODB_URI="your-mongodb-connection-string" npm start    # http://localhost:300
 |---|---|---|
 | `MONGODB_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017` |
 | `MONGODB_DB` | Database name | `mky_tasks` |
-| `TEAM_PASSWORD` | Optional shared sign-in password | none |
+| `COOKIE_SECURE` | Set to `1` when served over https | off |
 | `PORT` | Port to listen on | `3000` |
 
 ## Security notes
 
-- Sign-in is by name and email (plus the optional team password). That suits an internal tool on a private network, but it is **not hardened for the open internet**. If you host it publicly, set `TEAM_PASSWORD` at a minimum and consider proper authentication.
+- Accounts use email and password, with roles. Run it behind **https** in production and set `COOKIE_SECURE=1`.
+- Invite links are the keys to new accounts, so send them privately. They expire after 7 days and work once.
 - Never commit the MongoDB connection string. It contains a password.
