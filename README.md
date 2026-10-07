@@ -7,7 +7,8 @@ Built for moneykey and styled with the MKY design system (tokens copied to `publ
 1. Get a MongoDB database (pick one):
    - **MongoDB Atlas free tier (M0)** — free, hosted, no install. Create a cluster, add a database user,
      allow your IP, and copy the connection string (`mongodb+srv://…`).
-   - **Local:** `brew tap mongodb/brew && brew install mongodb-community && brew services start mongodb-community`
+   - **Local, no install (easiest):** run `npm run db` in a separate terminal. It starts MongoDB on 127.0.0.1:27017 and keeps data in `data/mongo`.
+   - **Local, system install:** `brew tap mongodb/brew && brew install mongodb-community && brew services start mongodb-community`
      (connection string is then `mongodb://127.0.0.1:27017`, which is the default).
 2. Start the app:
 ```bash
