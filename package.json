@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "db": "node scripts/local-db.mjs"
+    "db": "node scripts/local-db.mjs",
+    "deploy": "bash scripts/deploy.sh"
   },
   "engines": {
     "node": ">=20"
